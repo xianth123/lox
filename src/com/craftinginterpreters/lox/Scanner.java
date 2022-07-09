@@ -72,6 +72,7 @@ public class Scanner {
             case '*': addToken(STAR); break;
 
             case '!':
+                // 如此优雅
                 addToken(match('=') ? BANG_EQUAL : BANG);
                 break;
             case '=':
