@@ -1,0 +1,15 @@
+var a =  "global a";
+
+var b = "gggg b";
+
+print a;
+
+{
+    print a;
+    var a = "aaaa";
+    print a;
+}
+
+print a;
+
+print a + b;

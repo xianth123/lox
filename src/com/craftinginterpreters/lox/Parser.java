@@ -18,14 +18,6 @@ public class Parser {
         this.tokens = tokens;
     }
 
-    // Expr Parse(){
-    //     try {
-    //         return expression();
-    //     } catch (ParseError error) {
-    //         return null;
-    //     }
-    // }
-
     List<Stmt> parse() {
         List<Stmt> statements = new ArrayList<>();
         while (!isAtEnd()) {
@@ -59,6 +51,7 @@ public class Parser {
 
     private Stmt statement() {
         if (match(PRINT)) return printStatement();
+        if (match(LEFT_BRACE)) return new Stmt.Block(block());
         return expressionStatement();
     }
 
@@ -74,16 +67,41 @@ public class Parser {
         return new Stmt.Expression(expr);
     }
 
+    private List<Stmt> block() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(declaration());
+        }
+        consume(RIGHT_BRACE, "Expect '}' after block.");
+        return statements;
+    }
+
     private Expr expression(){
         return comma();
     }
 
     private Expr comma(){
-        Expr expr = equality();
+        Expr expr = assignment();
         while (match(COMMA)) {
             Token operator = previous();
             Expr right = equality();
             expr = new Expr.Binary(expr, operator, right);
+        }
+        return expr;
+    }
+
+    private Expr assignment() {
+        Expr expr = equality();
+
+        if (match(EQUAL)) {
+            Token equals = previous();
+            Expr value = assignment();
+
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable)expr).name;
+                return new Expr.Assign(name, value);
+            }
+            error(equals, "Invalid assignment target.");
         }
         return expr;
     }

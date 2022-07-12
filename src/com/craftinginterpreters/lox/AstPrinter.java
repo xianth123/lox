@@ -2,6 +2,9 @@ package com.craftinginterpreters.lox;
 
 import java.text.ParseException;
 
+import com.craftinginterpreters.lox.Expr.Assign;
+import com.craftinginterpreters.lox.Expr.Variable;
+
 public class AstPrinter  implements Expr.Visitor<String>{
     String print(Expr expr){
         return expr.accept(this);
@@ -50,6 +53,16 @@ public class AstPrinter  implements Expr.Visitor<String>{
             new Expr.Grouping(new Expr.Literal(45.78)));
 
         System.out.println(new AstPrinter().print(expression));
+    }
+
+    @Override
+    public String visitVariableExpr(Variable expr) {
+        return expr.name.lexeme;
+    }
+
+    @Override
+    public String visitAssignExpr(Assign expr) {
+        return expr.name.lexeme;
     }
     
 }
