@@ -2,6 +2,7 @@ package com.craftinginterpreters.lox;
 
 import java.time.Period;
 import java.util.List;
+import java.util.ArrayList;
 
 import javax.swing.RepaintManager;
 
@@ -17,12 +18,60 @@ public class Parser {
         this.tokens = tokens;
     }
 
-    Expr Parse(){
+    // Expr Parse(){
+    //     try {
+    //         return expression();
+    //     } catch (ParseError error) {
+    //         return null;
+    //     }
+    // }
+
+    List<Stmt> parse() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!isAtEnd()) {
+            statements.add(declaration());
+        }
+        return statements;
+    }
+
+    private Stmt declaration() {
         try {
-            return expression();
+            if (match(VAR)) return varDeclaration();
+
+            return statement();
         } catch (ParseError error) {
+            synchronize();
             return null;
         }
+    }
+
+    private Stmt varDeclaration() {
+        Token name = consume(IDENTIFIER, "Expect variable name.");
+
+        Expr initializer = null;
+        if (match(EQUAL)) {
+            initializer = expression();
+        }
+
+        consume(SEMICOLON, "Expect ';' after variable declaration.");
+        return new Stmt.Var(name, initializer);
+    }
+
+    private Stmt statement() {
+        if (match(PRINT)) return printStatement();
+        return expressionStatement();
+    }
+
+    private Stmt printStatement() {
+        Expr value = expression();
+        consume(SEMICOLON, "Except ';' after value.");
+        return new Stmt.Print(value);
+    }
+
+    private Stmt expressionStatement() {
+        Expr expr = expression();
+        consume(SEMICOLON, "Except ';' after expression.");
+        return new Stmt.Expression(expr);
     }
 
     private Expr expression(){
@@ -98,6 +147,10 @@ public class Parser {
             return new Expr.Literal(previous().literal);
         }
 
+        if (match(IDENTIFIER)) {
+            return new Expr.Variable(previous());
+        }
+
         if (match(LEFT_PAREN)) {
             Expr expr = expression();
             consume(RIGHT_PAREN, "Except ')' after expression.");
@@ -106,6 +159,7 @@ public class Parser {
 
         throw error(peek(), "Except expression.");
     }
+
     private boolean match(TokenType... types){
         for (TokenType type: types){
             if (check(type)) {

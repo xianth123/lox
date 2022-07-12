@@ -12,7 +12,11 @@ import java.util.List;
 import com.craftinginterpreters.lox.Scanner;
 
 public class Lox {
+    private static final Interpreter interpreter = new Interpreter();
+
     static boolean hadError = false;
+    static boolean hadRuntimeError = false;
+
     public static void main(String[] args) throws IOException {
         if (args.length > 1){
             System.out.println("Usage: lox [script]");
@@ -29,6 +33,7 @@ public class Lox {
         run(new String(bytes, Charset.defaultCharset()));  // 用编码格式将程序解码
 
         if (hadError) System.exit(65);
+        if (hadRuntimeError) System.exit(70);
     }
 
     private static void runPrompt() throws IOException {
@@ -48,12 +53,14 @@ public class Lox {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
         Parser parser = new Parser(tokens);
-        Expr expression = parser.Parse();
+        List<Stmt> statements = parser.parse();
 
         // Stop if there was a syntax error.
         if (hadError) return;
 
-        System.out.println(new AstPrinter().print(expression));
+        interpreter.interpret(statements);
+
+        // System.out.println(new AstPrinter().print(expression));
 
         // For now, just
         for (Token token: tokens) {
@@ -75,5 +82,11 @@ public class Lox {
         } else {
             report(token.line, "at '" + token.lexeme + "'", message);
         }
+    }
+
+    static void runtimeError(RuntimeError error) {
+        System.out.println(error.getMessage() + 
+            "\n[line" + error.token.line + "]");
+        hadRuntimeError = true;
     }
 }

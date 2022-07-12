@@ -4,13 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.naming.ldap.SortControl;
-
 import java.util.List;
 
 
 import static com.craftinginterpreters.lox.TokenType.*;
-// import com.craftinginterpreters.lox.Token;
 
 public class Scanner {
 
@@ -122,8 +119,10 @@ public class Scanner {
 
     private void identifier() {
         while (isAlphaNumberic(peek())) advance();
-
-        addToken(IDENTIFIER);
+        String text = source.substring(start, current);
+        TokenType type = keywords.get(text);
+        if (type == null) type = IDENTIFIER;
+        addToken(type);
     }
 
     private char advance(){
