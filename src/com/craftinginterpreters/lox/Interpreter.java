@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.craftinginterpreters.lox.Expr.Assign;
 import com.craftinginterpreters.lox.Stmt.Block;
+import com.craftinginterpreters.lox.Stmt.If;
+import com.craftinginterpreters.lox.Stmt.While;
 
 public class Interpreter implements Expr.Visitor<Object>, 
                                     Stmt.Visitor<Void> {
@@ -199,6 +201,23 @@ public class Interpreter implements Expr.Visitor<Object>,
     @Override
     public Void visitBlockStmt(Block stmt) {
         executeBlock(stmt.statements, new Environment(environment));
+        return null;
+    }
+
+    @Override
+    public Void visitIfStmt(If stmt) {
+        Object condition = evaluate(stmt.condition);
+        if (isTruthy(condition)) {
+            execute(stmt.thenBranch);
+        } else {
+            execute(stmt.elseBranch);
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitWhileStmt(While stmt) {
+        while (isTruthy(evaluate(stmt.condition))) execute(stmt.whileBody);
         return null;
     }
 }

@@ -10,6 +10,20 @@ print a;
     print a;
 }
 
-print a;
+a = 1;
 
-print a + b;
+if (a > 3) {
+    print "uuuuuuuuuuuuu";
+} else {
+    print "jjjj";
+}
+
+a = 9 ;
+while ( a > 0) {
+    a = a - 1;
+    print a;
+}
+
+for (var aa = 1; aa < 10; aa = aa + 1) {
+    print aa;
+}
