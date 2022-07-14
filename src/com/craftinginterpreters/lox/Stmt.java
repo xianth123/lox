@@ -8,6 +8,8 @@ abstract class Stmt{
     R visitExpressionStmt(Expression stmt);
     R visitIfStmt(If stmt);
     R visitWhileStmt(While stmt);
+    R visitBreakStmt(Break stmt);
+    R visitContinueStmt(Continue stmt);
     R visitPrintStmt(Print stmt);
     R visitVarStmt(Var stmt);
   }
@@ -52,9 +54,10 @@ abstract class Stmt{
     final Stmt elseBranch;
   }
   static class While extends Stmt {
-    While(Expr condition, Stmt whileBody) {
+    While(Expr condition, Stmt whileBody, Expr increment) {
       this.condition = condition;
       this.whileBody = whileBody;
+      this.increment = increment;
     }
 
     @Override
@@ -64,6 +67,31 @@ abstract class Stmt{
 
     final Expr condition;
     final Stmt whileBody;
+    final Expr increment;
+  }
+  static class Break extends Stmt {
+    Break(Expr value) {
+      this.value = value;
+    }
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitBreakStmt(this);
+    }
+
+    final Expr value;
+  }
+  static class Continue extends Stmt {
+    Continue(Expr value) {
+      this.value = value;
+    }
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitContinueStmt(this);
+    }
+
+    final Expr value;
   }
   static class Print extends Stmt {
     Print(Expr expression) {

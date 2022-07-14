@@ -7,6 +7,8 @@ import java.util.Arrays;
 
 import javax.swing.RepaintManager;
 
+import com.craftinginterpreters.lox.Stmt.Continue;
+
 import static com.craftinginterpreters.lox.TokenType.*;
 
 public class Parser {
@@ -55,6 +57,8 @@ public class Parser {
         if (match(IF)) return ifStatement();
         if (match(WHILE)) return whileStatement();
         if (match(FOR)) return forStatement();
+        if (match(BREAK)) return breakStatement();
+        if (match(CONTINUE)) return continueStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
         return expressionStatement();
     }
@@ -82,7 +86,7 @@ public class Parser {
         Expr condition = expression();
         consume(RIGHT_PAREN, "Expect ')' after while condition.");
         Stmt whileBody = statement();
-        return new Stmt.While(condition, whileBody);
+        return new Stmt.While(condition, whileBody, null);
     }
 
     private Stmt forStatement() {
@@ -113,12 +117,22 @@ public class Parser {
             body = new Stmt.Block(Arrays.asList(body, new Stmt.Expression(increment)));
         }
 
-        body = new Stmt.While(condition, body);
+        body = new Stmt.While(condition, body, increment);
 
         if (initializer != null) {
             body = new Stmt.Block(Arrays.asList(initializer, body));
         }
         return body;
+    }
+
+    private Stmt breakStatement(){
+        consume(SEMICOLON, "Expect ';' after break");
+        return new Stmt.Break(null);
+    }
+
+    private Stmt continueStatement(){
+        consume(SEMICOLON, "Expect ';' after break");
+        return new Stmt.Continue(null);
     }
 
     private Stmt expressionStatement() {

@@ -4,12 +4,16 @@ import java.util.List;
 
 import com.craftinginterpreters.lox.Expr.Assign;
 import com.craftinginterpreters.lox.Stmt.Block;
+import com.craftinginterpreters.lox.Stmt.Break;
+import com.craftinginterpreters.lox.Stmt.Continue;
 import com.craftinginterpreters.lox.Stmt.If;
 import com.craftinginterpreters.lox.Stmt.While;
 
 public class Interpreter implements Expr.Visitor<Object>, 
                                     Stmt.Visitor<Void> {
     private Environment environment = new Environment();
+    private static class BreakError extends RuntimeException {}
+    private static class ContinueError extends RuntimeException {}
 
     void interpret(List<Stmt> statements) {
         try {
@@ -209,7 +213,7 @@ public class Interpreter implements Expr.Visitor<Object>,
         Object condition = evaluate(stmt.condition);
         if (isTruthy(condition)) {
             execute(stmt.thenBranch);
-        } else {
+        } else if (stmt.elseBranch != null) {
             execute(stmt.elseBranch);
         }
         return null;
@@ -217,7 +221,26 @@ public class Interpreter implements Expr.Visitor<Object>,
 
     @Override
     public Void visitWhileStmt(While stmt) {
-        while (isTruthy(evaluate(stmt.condition))) execute(stmt.whileBody);
+        while (isTruthy(evaluate(stmt.condition))) {
+            try {
+                execute(stmt.whileBody);
+            } catch (BreakError error) {
+                break;
+            } catch (ContinueError error) {
+                evaluate(stmt.increment);
+                continue;
+            }
+        }
         return null;
+    }
+
+    @Override
+    public Void visitBreakStmt(Break stmt) {
+        throw new BreakError();
+    }
+
+    @Override
+    public Void visitContinueStmt(Continue stmt) {
+        throw new ContinueError();
     }
 }
