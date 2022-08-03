@@ -31,13 +31,50 @@ public class Parser {
 
     private Stmt declaration() {
         try {
+            if (match(CLASS)) return classDeclaration();
+            if (match(FUN)) return function("function");
             if (match(VAR)) return varDeclaration();
+            if (match(RETURN)) return returnStatement();
 
             return statement();
         } catch (ParseError error) {
             synchronize();
             return null;
         }
+    }
+
+    private Stmt.Class classDeclaration() {
+        Token name = consume(IDENTIFIER, "Expect class name.");
+        consume(LEFT_BRACE, "Expect '{' before class body.");
+
+        List<Stmt.Function> methods = new ArrayList<>();
+
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            methods.add(function("method"));
+        }
+
+        consume(RIGHT_BRACE, "Expect '}' after class body.");
+
+        return new Stmt.Class(name, methods);
+    }
+
+    private Stmt.Function function(String kind) {
+        Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
+        consume(LEFT_PAREN, "Expect '(' after " + kind + "name.");
+        List<Token> params = new ArrayList<>();
+
+        if (!check(RIGHT_PAREN)) {
+            if (params.size() >= 255) {
+                error(peek(), "Can't have more than 255 params.");
+            }
+            do {
+                params.add(consume(IDENTIFIER, "Expect parameter name."));
+            } while (match(COMMA));
+        }
+        consume(RIGHT_PAREN, "Expect ')' after parameters.");
+        consume(LEFT_BRACE, "Expect '{' before " + kind + "body.");
+        List<Stmt> body = block();
+        return new Stmt.Function(name, params, body);
     }
 
     private Stmt varDeclaration() {
@@ -50,6 +87,16 @@ public class Parser {
 
         consume(SEMICOLON, "Expect ';' after variable declaration.");
         return new Stmt.Var(name, initializer);
+    }
+
+    private Stmt returnStatement() {
+        Token keyword = previous();
+        Expr value = null;
+        if (!check(SEMICOLON)) {
+            value = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after return value.");
+        return new Stmt.Return(keyword, value);
     }
 
     private Stmt statement() {
@@ -155,7 +202,7 @@ public class Parser {
     }
 
     private Expr assignment() {
-        Expr expr = comma();
+        Expr expr = equality();
 
         if (match(EQUAL)) {
             Token equals = previous();
@@ -163,13 +210,19 @@ public class Parser {
 
             if (expr instanceof Expr.Variable) {
                 Token name = ((Expr.Variable)expr).name;
+                System.out.println("assign expr");
+                System.out.println("name: " + name.lexeme);
                 return new Expr.Assign(name, value);
+            } else if (expr instanceof Expr.Get) {
+                Expr.Get get = (Expr.Get) expr;
+                return new Expr.Set(get.object, get.name, value);
             }
             error(equals, "Invalid assignment target.");
         }
         return expr;
     }
 
+    // 不使用 逗号表达式，以免在函数解析式时出问题     
     private Expr comma(){
         Expr expr = equality();
         while (match(COMMA)) {
@@ -227,7 +280,35 @@ public class Parser {
             Expr right = unary();
             return new Expr.Unary(operator, right);
         }
-        return primary();
+        return call();
+    }
+
+    private Expr call() {
+        Expr expr = primary();
+
+        while (true) {
+            if (match(LEFT_PAREN)) {
+                List<Expr> arguments = new ArrayList<>();
+
+                while (!check(RIGHT_PAREN)) {
+                    do {
+                        if (arguments.size() >= 255) {
+                            error(peek(), "Can't have more than 255 arguments.");
+                        }
+                        arguments.add(expression());
+                    } while(match(COMMA));
+                }
+
+                Token paren = consume(RIGHT_PAREN, "Expect ')' after arguments.");
+                expr = new Expr.Call(expr, paren, arguments);
+            } else if (match(DOT)) {
+                Token name = consume(IDENTIFIER, "Expect property name after '.'.");
+                expr = new Expr.Get(expr, name);
+            } else {
+                break;
+            }
+        }
+        return expr;
     }
 
     private Expr primary(){
@@ -238,6 +319,8 @@ public class Parser {
         if (match(NUMBER, STRING)) {
             return new Expr.Literal(previous().literal);
         }
+
+        if (match(THIS)) return new Expr.This(previous());
 
         if (match(IDENTIFIER)) {
             return new Expr.Variable(previous());

@@ -1,7 +1,26 @@
 
-for (var aa = 1; aa < 10; aa = aa + 1) {
-    if ( aa  == 2) {
-        continue;
-    } 
-    print aa;
-}
+ fun add(a, b) {
+    print a + b;
+    fun print1() {
+        print "Hello";
+        print a;
+        print b;
+    }
+    print1();
+    return a + b;
+ }
+
+var a = add(1, 2);
+
+ fun fib(n) {
+    if (n < 2) {
+        return n;
+    }
+    return fib(n - 1) + fib(n - 2);
+ }
+
+
+ print fib(3);
+ print fib(4);
+ print fib(5);
+ print fib(6);
